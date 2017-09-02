@@ -14,6 +14,70 @@ namespace JetDataHandler
         {
             public string Methods { get; set; }
             public double Value { get; set; }
+            public static Matrix<double> createMatrix(double beta,double theta,int xNum,double deltaX,double thermalDiffusivity)
+            {
+                double p = thermalDiffusivity / (deltaX * deltaX);
+                double gamma = 0.5 - beta;
+                double theta_comma = 1 - theta;
+                double polyNominal_1 = p * theta + beta;
+                double polyNominal_2 = -(p * theta - gamma);
+                double polyNominal_3 = 2 * (p * theta + beta);
+
+                double polyNominal_4= beta-p*theta_comma;
+                double polyNominal_5 = gamma+p*theta_comma;
+                double polyNominal_6 = 2*(beta - p * theta_comma);
+                Matrix<double> backTemMatrix = CreateMatrix.Dense<double>(xNum, xNum, (i, j) =>
+                 {
+                     if (i==j)
+                     {
+                         if (i==1||i==xNum)
+                         {
+                             return polyNominal_1;
+                         }
+                         else
+                         {
+                             return polyNominal_3;
+                         }
+                     }
+                     else
+                     {
+                         if (Math.Abs(i-j)==1)
+                         {
+                             return polyNominal_2;
+                         }
+                         else
+                         {
+                             return 0;
+                         }
+                     }
+                 });
+                Matrix<double> frontMatrix=CreateMatrix.Dense<double>(xNum, xNum, (i, j) =>
+                {
+                    if (i == j)
+                    {
+                        if (i == 1 || i == xNum)
+                        {
+                            return polyNominal_4;
+                        }
+                        else
+                        {
+                            return polyNominal_6;
+                        }
+                    }
+                    else
+                    {
+                        if (Math.Abs(i - j) == 1)
+                        {
+                            return polyNominal_5;
+                        }
+                        else
+                        {
+                            return 0;
+                        }
+                    }
+                });
+                return backTemMatrix;
+            }
         }
 
     }

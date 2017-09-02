@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.OleDb;
+using MathNet.Numerics.Data.Text;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace JetDataHandler
 {
@@ -17,6 +19,21 @@ namespace JetDataHandler
         public double beta;
         public double gamma;
         public double theta;
+        public int xNum;
+        public double thermalDiffusivity;
+        public double deltaX;
+        public double density;
+        public double specific_heat_capacity;
+
+        public Vector<double> heat_flux_array;
+        public Vector<double> temperature;
+        public Matrix<double> matrix;
+
+
+
+        public int dataNumber;//数据数量
+        public int acqusitionFre;//采样频率
+
         public Form1()
         {
             InitializeComponent();
@@ -25,9 +42,12 @@ namespace JetDataHandler
         {
             BindComboBox1();
             BindComboBox2();
-            beta = 1 / 2;
+            beta = 0.5;
             gamma = 1 - beta;
-            theta = 0;
+            theta = 0.5;
+            thermalDiffusivity = 3.0;
+            deltaX = 0.00002;
+            xNum = 20;
         }
         private void BindComboBox1()
         {
@@ -58,13 +78,14 @@ namespace JetDataHandler
             PathText.Text = file.FileName;
             if (file.FileName!=null)
             {
-                data = ExcelHandler.ExcelToDS(file.FileName);
-            }  
+                matrix = DelimitedReader.Read<double>(file.FileName, false, ",", true);
+            }
         }
 
         private void calButton_Click(object sender, EventArgs e)
         {
-            
+            // MathFunction.DeferenceMethods.createMatrix(beta,theta,xNum,deltaX,thermalDiffusivity);
+            DelimitedWriter.Write("‪test.csv", matrix, ",");
         }
 
         private void button2_Click_1(object sender, EventArgs e)
@@ -72,6 +93,22 @@ namespace JetDataHandler
             beta = System.Convert.ToDouble(comboBox1.SelectedValue.ToString());
             gamma = 0.5 - beta;
             theta= System.Convert.ToDouble(comboBox2.SelectedValue.ToString());
+        }
+
+        private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)13)
+            {
+                density = System.Convert.ToDouble(textBox1.Text);
+            }
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)13)
+            {
+                specific_heat_capacity = System.Convert.ToDouble(textBox1.Text);
+            }
         }
     }
 }
