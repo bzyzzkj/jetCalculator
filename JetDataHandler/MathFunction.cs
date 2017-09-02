@@ -14,11 +14,14 @@ namespace JetDataHandler
         {
             public string Methods { get; set; }
             public double Value { get; set; }
-            public static Matrix<double> createMatrix(double beta,double theta,int xNum,double deltaX,double thermalDiffusivity)
+            public static Matrix<double> createMatrix(double beta,double theta,int xNum,double deltaX,double thermalDiffusivity,double deltaT,double density,double c)
             {
                 double p = thermalDiffusivity / (deltaX * deltaX);
                 double gamma = 0.5 - beta;
                 double theta_comma = 1 - theta;
+
+                double nominal = deltaT / (density * c * deltaX);
+
                 double polyNominal_1 = p * theta + beta;
                 double polyNominal_2 = -(p * theta - gamma);
                 double polyNominal_3 = 2 * (p * theta + beta);
@@ -30,18 +33,30 @@ namespace JetDataHandler
                  {
                      if (i==j)
                      {
-                         if (i==1||i==xNum)
+                         if (i==xNum)
                          {
-                             return polyNominal_1;
+                             return nominal;
                          }
                          else
                          {
-                             return polyNominal_3;
+                             return polyNominal_2;
                          }
                      }
                      else
                      {
-                         if (Math.Abs(i-j)==1)
+                         if ((i-j)==1)
+                         {
+                             if (i==xNum)
+                             {
+                                 return polyNominal_1;
+                             }
+                             else
+                             {
+                                 return polyNominal_3;
+                             }
+                             
+                         }
+                         if ((i-j)==2)
                          {
                              return polyNominal_2;
                          }

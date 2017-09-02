@@ -24,6 +24,8 @@ namespace JetDataHandler
         public double deltaX;
         public double density;
         public double specific_heat_capacity;
+        public double deltaT;
+        public double c;
 
         public Vector<double> heat_flux_array;
         public Vector<double> temperature;
@@ -45,9 +47,18 @@ namespace JetDataHandler
             beta = 0.5;
             gamma = 1 - beta;
             theta = 0.5;
+
+        
             thermalDiffusivity = 3.0;
             deltaX = 0.00002;
             xNum = 20;
+            density = 100;
+            specific_heat_capacity = 20;
+            thermalDiffusivity = 20;
+            deltaT = 1.0 / xNum;
+            c = 1000;
+            
+
         }
         private void BindComboBox1()
         {
@@ -71,6 +82,7 @@ namespace JetDataHandler
             comboBox2.DataSource = infoList;
             
         }
+
         private void button1_Click(object sender, EventArgs e)
         {
             OpenFileDialog file = new OpenFileDialog();
@@ -84,8 +96,8 @@ namespace JetDataHandler
 
         private void calButton_Click(object sender, EventArgs e)
         {
-            // MathFunction.DeferenceMethods.createMatrix(beta,theta,xNum,deltaX,thermalDiffusivity);
-            DelimitedWriter.Write("‪test.csv", matrix, ",");
+            Matrix<double> calMatrix= MathFunction.DeferenceMethods.createMatrix(beta,theta,xNum,deltaX,thermalDiffusivity,deltaT,density,c);
+            DelimitedWriter.Write("‪test.csv", calMatrix, ",");
         }
 
         private void button2_Click_1(object sender, EventArgs e)
