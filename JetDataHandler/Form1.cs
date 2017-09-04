@@ -15,21 +15,20 @@ namespace JetDataHandler
 {
     public partial class Form1 : Form
     {
-        public DataTable data;
-        public double beta;
-        public double gamma;
-        public double theta;
-        public int xNum;
-        public double thermalDiffusivity;
-        public double deltaX;
-        public double density;
-        public double specific_heat_capacity;
-        public double deltaT;
-        public double c;
 
         public Vector<double> heat_flux_array;
         public Vector<double> temperature;
         public Matrix<double> matrix;
+
+        private Vector<double> temperature2;
+        private Vector<double> temperature3;
+        private Vector<double> temperature4;
+        private Vector<double> temperature5;
+
+        private Vector<double> voltage;
+
+        public Vector<double> initialTem;
+        public Vector<double> result;
 
 
 
@@ -44,9 +43,9 @@ namespace JetDataHandler
         {
             BindComboBox1();
             BindComboBox2();
-            beta = 0.5;
-            gamma = 1 - beta;
-            theta = 0.5;
+            MathFunction.beta = 0.5;
+            MathFunction.gamma = 1 - MathFunction.beta;
+            MathFunction.theta = 0.5;
 
         
             thermalDiffusivity = 3.0;
@@ -57,6 +56,8 @@ namespace JetDataHandler
             thermalDiffusivity = 20;
             deltaT = 1.0 / xNum;
             c = 1000;
+
+            initialTem = CreateVector.Dense<double>(xNum, 35);
             
 
         }
@@ -82,6 +83,40 @@ namespace JetDataHandler
             comboBox2.DataSource = infoList;
             
         }
+        private Vector<double> vectorTem(double varBeta, double varTheta)
+        {
+            Vector<double> temVector=CreateVector.Dense<double>(xNum, i=> 
+            {
+                if (i==0)
+                {
+                    return 
+                }
+            })
+        }
+        private Vector<double> GetResult(Matrix<double> varMatrix,Vector<double> varTem,Vector<double> varVoltage,int count)
+        {
+            Vector<double> varResult;
+            Vector<double> vectorTem = CreateVector.Dense<double>(xNum, i =>
+            {
+                if (i==0||i==1)
+                {
+                    return varTem[count];
+                }
+                else
+                {
+                    return 0;
+                }
+            }).Multiply(varTem[count]);
+            Vector<double> vectorPower = CreateVector.Dense<double>(xNum, i =>
+            {
+                if (i==0)
+                {
+
+                }
+            })
+            Vector<double> vectorPower;
+            return varResult;
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -92,6 +127,9 @@ namespace JetDataHandler
             {
                 matrix = DelimitedReader.Read<double>(file.FileName, false, ",", true);
             }
+            temperature2 = matrix.Column(0);
+            
+            MessageBox.Show(temperature2.ToString());
         }
 
         private void calButton_Click(object sender, EventArgs e)

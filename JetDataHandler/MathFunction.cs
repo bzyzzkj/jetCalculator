@@ -10,17 +10,28 @@ namespace JetDataHandler
 {
     class MathFunction
     {
+        public static double p{ get; set; }
+        public static double beta { get; set; }
+        public static double theta { get; set; }
+        public static double thermalDiffusivity { get; set; }
+        public static double deltaX { get; set; }
+        public static double density { get; set; }
+        public static double specific_heat_capacity { get; set; }
+        public static double gamma { get; set; }
+        public  static double deltaT { get; set; }
+        public static int xNum { get; set; }
+
         public class DeferenceMethods
         {
             public string Methods { get; set; }
             public double Value { get; set; }
-            public static Matrix<double> createMatrix(double beta,double theta,int xNum,double deltaX,double thermalDiffusivity,double deltaT,double density,double c)
+            public static Matrix<double> createMatrix()
             {
-                double p = thermalDiffusivity / (deltaX * deltaX);
-                double gamma = 0.5 - beta;
+                p = thermalDiffusivity / (deltaX * deltaX);
+                gamma = 0.5 - beta;
                 double theta_comma = 1 - theta;
 
-                double nominal = deltaT / (density * c * deltaX);
+                double nominal = deltaT / (density * specific_heat_capacity * deltaX);
 
                 double polyNominal_1 = p * theta + beta;
                 double polyNominal_2 = -(p * theta - gamma);
@@ -91,7 +102,7 @@ namespace JetDataHandler
                         }
                     }
                 });
-                return backTemMatrix;
+                return backTemMatrix.Inverse().Multiply(frontMatrix);
             }
         }
 
