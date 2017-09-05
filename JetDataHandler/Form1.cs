@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Data.OleDb;
 using MathNet.Numerics.Data.Text;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Complex;
 
 namespace JetDataHandler
 {
@@ -48,16 +49,16 @@ namespace JetDataHandler
             MathFunction.theta = 0.5;
 
         
-            thermalDiffusivity = 3.0;
-            deltaX = 0.00002;
-            xNum = 20;
-            density = 100;
-            specific_heat_capacity = 20;
-            thermalDiffusivity = 20;
-            deltaT = 1.0 / xNum;
-            c = 1000;
+            MathFunction.thermalDiffusivity = 3.0;
+            MathFunction.deltaX = 0.00002;
+            MathFunction.xNum = 20;
+            MathFunction.density = 100;
+            MathFunction.specific_heat_capacity = 20;
+            MathFunction.thermalDiffusivity = 20;
+            MathFunction.deltaT = 1.0 / MathFunction.xNum;
+            MathFunction.p = MathFunction.thermalDiffusivity / MathFunction.deltaX * MathFunction.deltaX;
 
-            initialTem = CreateVector.Dense<double>(xNum, 35);
+            initialTem = CreateVector.Dense<double>(MathFunction.xNum, 35);
             
 
         }
@@ -83,38 +84,45 @@ namespace JetDataHandler
             comboBox2.DataSource = infoList;
             
         }
-        private Vector<double> vectorTem(double varBeta, double varTheta)
+        private Vector<double> createVectorTem()
         {
-            Vector<double> temVector=CreateVector.Dense<double>(xNum, i=> 
+            Vector<double> temVector = CreateVector.Dense<double>(MathFunction.xNum, i =>
             {
-                if (i==0)
+                if (i == 0)
                 {
-                    return 
+                    return -(MathFunction.p * MathFunction.theta + MathFunction.beta);
                 }
-            })
-        }
-        private Vector<double> GetResult(Matrix<double> varMatrix,Vector<double> varTem,Vector<double> varVoltage,int count)
-        {
-            Vector<double> varResult;
-            Vector<double> vectorTem = CreateVector.Dense<double>(xNum, i =>
-            {
-                if (i==0||i==1)
+                if (i == 1)
                 {
-                    return varTem[count];
+                    return (MathFunction.p * MathFunction.theta - MathFunction.gamma);
                 }
                 else
                 {
                     return 0;
                 }
-            }).Multiply(varTem[count]);
-            Vector<double> vectorPower = CreateVector.Dense<double>(xNum, i =>
-            {
-                if (i==0)
-                {
+            });
+            return temVector;
+        }
 
+        
+        private Vector<double> GetResult(Matrix<double> varMatrix,Vector<double> varTem,int count)
+        {
+            Vector<double> varResult;
+            Vector<double> vectorTem = createVectorTem().Multiply(varMatrix.Column(4)[count]);
+
+            Vector<double> vectorPower = CreateVector.Dense<double>(MathFunction.xNum, i =>
+            {
+                if (i == 0)
+                {
+                    return MathFunction.deltaT / (MathFunction.density * MathFunction.specific_heat_capacity *
+                                                  MathFunction.deltaX);
                 }
-            })
-            Vector<double> vectorPower;
+                else
+                {
+                    return 0;
+                }
+            }).Multiply(varMatrix.Column(0)[count]);
+            varResult = varMatrix.Multiply(varTem).Add(vectorTem).Add(vectorPower);
             return varResult;
         }
 
@@ -134,22 +142,33 @@ namespace JetDataHandler
 
         private void calButton_Click(object sender, EventArgs e)
         {
-            Matrix<double> calMatrix= MathFunction.DeferenceMethods.createMatrix(beta,theta,xNum,deltaX,thermalDiffusivity,deltaT,density,c);
-            DelimitedWriter.Write("‪test.csv", calMatrix, ",");
+            Matrix<double> calMatrix= MathFunction.DeferenceMethods.createMatrix();
+            Matrix<double> resultMatrix=CreateMatrix.Dense<double>(1,MathFunction.xNum ) 
+            resultMatrix.InsertColumn(resultMatrix.ColumnCount - 1, initialTem);
+            for (int i = 0; i < dataNumber; i++)
+            {
+                Vector<double> resultVector = GetResult(matrix, initialTem, i);
+                initialTem = CreateVector.Dense<double>(1, matrix.Column(4)[i+1])
+                    .Add((resultVector.SubVector(0, MathFunction.xNum - 1)));
+            }
+            
+
+
+            DelimitedWriter.Write("‪test.csv",resultMatrix, ",");
         }
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            beta = System.Convert.ToDouble(comboBox1.SelectedValue.ToString());
-            gamma = 0.5 - beta;
-            theta= System.Convert.ToDouble(comboBox2.SelectedValue.ToString());
+            MathFunction.beta = System.Convert.ToDouble(comboBox1.SelectedValue.ToString());
+            MathFunction.gamma = 0.5 - MathFunction.beta;
+            MathFunction.theta= System.Convert.ToDouble(comboBox2.SelectedValue.ToString());
         }
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)13)
             {
-                density = System.Convert.ToDouble(textBox1.Text);
+                MathFunction.density = System.Convert.ToDouble(textBox1.Text);
             }
         }
 
@@ -157,7 +176,7 @@ namespace JetDataHandler
         {
             if (e.KeyChar == (char)13)
             {
-                specific_heat_capacity = System.Convert.ToDouble(textBox1.Text);
+                MathFunction.specific_heat_capacity = System.Convert.ToDouble(textBox1.Text);
             }
         }
     }

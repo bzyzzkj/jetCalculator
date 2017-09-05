@@ -18,7 +18,7 @@ namespace JetDataHandler
         public static double density { get; set; }
         public static double specific_heat_capacity { get; set; }
         public static double gamma { get; set; }
-        public  static double deltaT { get; set; }
+        public static double deltaT { get; set; }
         public static int xNum { get; set; }
 
         public class DeferenceMethods
