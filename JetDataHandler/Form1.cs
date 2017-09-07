@@ -20,6 +20,7 @@ namespace JetDataHandler
         public Vector<double> heat_flux_array;
         public Vector<double> temperature;
         public Matrix<double> matrix;
+        public Matrix<double> usingMatrix;
 
         private Vector<double> temperature2;
         private Vector<double> temperature3;
@@ -45,21 +46,24 @@ namespace JetDataHandler
             BindComboBox1();
             BindComboBox2();
             MathFunction.beta = 0.5;
-            MathFunction.gamma = 1 - MathFunction.beta;
+            MathFunction.gamma = 0.5 - MathFunction.beta;
             MathFunction.theta = 0.5;
 
         
-            MathFunction.thermalDiffusivity = 3.0;
-            MathFunction.deltaX = 0.00002;
-            MathFunction.xNum = 20;
-            MathFunction.density = 100;
-            MathFunction.specific_heat_capacity = 20;
-            MathFunction.thermalDiffusivity = 20;
-            MathFunction.deltaT = 1.0 / MathFunction.xNum;
+            MathFunction.thermalDiffusivity = 0.00009;
+            MathFunction.deltaX = 0.000008;
+            MathFunction.xNum = 51;
+            MathFunction.density = 2329;
+            MathFunction.specific_heat_capacity = 700;
+            MathFunction.thermalDiffusivity = 0.00009;
+            dataNumber = 250;
+            MathFunction.deltaT = 1.0 / dataNumber;
             MathFunction.p = MathFunction.thermalDiffusivity / MathFunction.deltaX * MathFunction.deltaX;
 
-            initialTem = CreateVector.Dense<double>(MathFunction.xNum, 35);
-            
+            textBox1.Text = MathFunction.density.ToString();
+            textBox2.Text = MathFunction.specific_heat_capacity.ToString();
+            textBox4.Text = dataNumber.ToString();
+
 
         }
         private void BindComboBox1()
@@ -102,27 +106,28 @@ namespace JetDataHandler
                 }
             });
             return temVector;
+            
         }
 
         
-        private Vector<double> GetResult(Matrix<double> varMatrix,Vector<double> varTem,int count)
+        private Vector<double> GetResult(Matrix<double> varMatrix,Vector<double> varTem,int count,Matrix<double> calMatrix,Matrix<double> inverseMatrix)
         {
             Vector<double> varResult;
-            Vector<double> vectorTem = createVectorTem().Multiply(varMatrix.Column(4)[count]);
+            Vector<double> vectorTem = inverseMatrix.Multiply(createVectorTem().Multiply(varMatrix.Column(5)[count]));
 
-            Vector<double> vectorPower = CreateVector.Dense<double>(MathFunction.xNum, i =>
+            Vector<double> vectorPower =inverseMatrix.Multiply(CreateVector.Dense<double>(MathFunction.xNum, i =>
             {
                 if (i == 0)
                 {
-                    return MathFunction.deltaT / (MathFunction.density * MathFunction.specific_heat_capacity *
+                    return MathFunction.deltaT*10000 / (MathFunction.density * MathFunction.specific_heat_capacity *
                                                   MathFunction.deltaX);
                 }
                 else
                 {
                     return 0;
                 }
-            }).Multiply(varMatrix.Column(0)[count]);
-            varResult = varMatrix.Multiply(varTem).Add(vectorTem).Add(vectorPower);
+            }).Multiply((varMatrix.Column(0)[count]*varMatrix.Column(0)[count]/150))/0.000175);
+            varResult = calMatrix.Multiply(varTem).Add(vectorTem).Add(vectorPower);
             return varResult;
         }
 
@@ -135,25 +140,46 @@ namespace JetDataHandler
             {
                 matrix = DelimitedReader.Read<double>(file.FileName, false, ",", true);
             }
-            temperature2 = matrix.Column(0);
-            
-            MessageBox.Show(temperature2.ToString());
+            usingMatrix = matrix.SubMatrix(0, dataNumber, 0,matrix.ColumnCount);
+            DelimitedWriter.Write("‪usingMatrix.csv", usingMatrix, ",");
         }
 
         private void calButton_Click(object sender, EventArgs e)
         {
-            Matrix<double> calMatrix= MathFunction.DeferenceMethods.createMatrix();
-            Matrix<double> resultMatrix=CreateMatrix.Dense<double>(1,MathFunction.xNum ) 
-            resultMatrix.InsertColumn(resultMatrix.ColumnCount - 1, initialTem);
-            for (int i = 0; i < dataNumber; i++)
+            Matrix<double> inverseMatrix = MathFunction.DeferenceMethods.createInverseMatrix();
+            Matrix<double> tempMatrix = MathFunction.DeferenceMethods.CreateTemMatrix();
+            Matrix<double> calMatrix = inverseMatrix.Multiply(tempMatrix);
+            initialTem = CreateVector.Dense<double>(MathFunction.xNum, i =>
             {
-                Vector<double> resultVector = GetResult(matrix, initialTem, i);
-                initialTem = CreateVector.Dense<double>(1, matrix.Column(4)[i+1])
-                    .Add((resultVector.SubVector(0, MathFunction.xNum - 1)));
+                return usingMatrix.Column(5)[0] - i;
+            });
+            DelimitedWriter.Write("‪calMatrix.csv", calMatrix, ",");
+            Matrix<double> resultMatrix = CreateMatrix.Dense<double>(MathFunction.xNum,dataNumber);
+            Matrix<double> resultTempMatrix = CreateMatrix.Dense<double>(MathFunction.xNum, dataNumber);
+  
+            resultMatrix=resultMatrix.InsertColumn(0, initialTem);
+            resultTempMatrix = resultTempMatrix.InsertColumn(0, initialTem);
+            for (int i = 0; i < dataNumber-1; i++)
+            {
+                Vector<double> resultVector = GetResult(usingMatrix, initialTem, i,calMatrix,inverseMatrix);
+                resultMatrix=resultMatrix.InsertColumn(i+1, resultVector);
+               
+                initialTem = CreateVector.Dense<double>(MathFunction.xNum, j =>
+                    {
+                        if (j == 0)
+                        {
+                           return usingMatrix.Column(5)[i+1];
+                        }
+                        else
+                        {
+                            return resultVector[j-1];
+                        }
+
+                    });
+                resultTempMatrix = resultTempMatrix.InsertColumn(i + 1, initialTem);
+                textBox3.Text = i.ToString();
             }
-            
-
-
+           DelimitedWriter.Write("resultTemp.csv",resultTempMatrix,",");
             DelimitedWriter.Write("‪test.csv",resultMatrix, ",");
         }
 
@@ -177,6 +203,14 @@ namespace JetDataHandler
             if (e.KeyChar == (char)13)
             {
                 MathFunction.specific_heat_capacity = System.Convert.ToDouble(textBox1.Text);
+            }
+        }
+
+        private void textBox4_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)13)
+            {
+                dataNumber = System.Convert.ToInt32(textBox4.Text);
             }
         }
     }

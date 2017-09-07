@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.Data.Text;
 
 
 namespace JetDataHandler
@@ -20,31 +21,27 @@ namespace JetDataHandler
         public static double gamma { get; set; }
         public static double deltaT { get; set; }
         public static int xNum { get; set; }
+        public static int dataNumber { get; set; }
 
         public class DeferenceMethods
         {
             public string Methods { get; set; }
             public double Value { get; set; }
-            public static Matrix<double> createMatrix()
+            public static Matrix<double> createInverseMatrix()
             {
                 p = thermalDiffusivity / (deltaX * deltaX);
                 gamma = 0.5 - beta;
-                double theta_comma = 1 - theta;
-
-                double nominal = deltaT / (density * specific_heat_capacity * deltaX);
+                double nominal = deltaT*10000 / (density * specific_heat_capacity * deltaX);
 
                 double polyNominal_1 = p * theta + beta;
                 double polyNominal_2 = -(p * theta - gamma);
                 double polyNominal_3 = 2 * (p * theta + beta);
 
-                double polyNominal_4= beta-p*theta_comma;
-                double polyNominal_5 = gamma+p*theta_comma;
-                double polyNominal_6 = 2*(beta - p * theta_comma);
                 Matrix<double> backTemMatrix = CreateMatrix.Dense<double>(xNum, xNum, (i, j) =>
                  {
                      if (i==j)
                      {
-                         if (i==xNum)
+                         if (i==xNum-1)
                          {
                              return nominal;
                          }
@@ -57,7 +54,7 @@ namespace JetDataHandler
                      {
                          if ((i-j)==1)
                          {
-                             if (i==xNum)
+                             if (i==xNum-1)
                              {
                                  return polyNominal_1;
                              }
@@ -77,11 +74,26 @@ namespace JetDataHandler
                          }
                      }
                  });
-                Matrix<double> frontMatrix=CreateMatrix.Dense<double>(xNum, xNum, (i, j) =>
+
+  
+                DelimitedWriter.Write("‪backMatrix.csv", backTemMatrix, ",");
+                return backTemMatrix.Inverse();
+            }
+
+            public static Matrix<double> CreateTemMatrix()
+            {
+                p = thermalDiffusivity / (deltaX * deltaX);
+                gamma = 0.5 - beta;
+                double theta_comma = 1 - theta;
+
+                double polyNominal_4 = beta - p * theta_comma;
+                double polyNominal_5 = gamma + p * theta_comma;
+                double polyNominal_6 = 2 * (beta - p * theta_comma);
+                Matrix<double> frontMatrix = CreateMatrix.Dense<double>(xNum, xNum, (i, j) =>
                 {
                     if (i == j)
                     {
-                        if (i == 1 || i == xNum)
+                        if (i == 0 || i == xNum - 1)
                         {
                             return polyNominal_4;
                         }
@@ -92,17 +104,18 @@ namespace JetDataHandler
                     }
                     else
                     {
-                        if (Math.Abs(i - j) == 1)
+                        switch (Math.Abs(i - j))
                         {
-                            return polyNominal_5;
-                        }
-                        else
-                        {
-                            return 0;
+                            case 1:
+                                return polyNominal_5;
+                            default:
+                                return 0;
                         }
                     }
                 });
-                return backTemMatrix.Inverse().Multiply(frontMatrix);
+                DelimitedWriter.Write("‪frontMatrix.csv", frontMatrix, ",");
+
+                return frontMatrix;
             }
         }
 
